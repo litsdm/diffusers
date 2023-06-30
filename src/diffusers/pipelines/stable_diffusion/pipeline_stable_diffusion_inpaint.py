@@ -476,7 +476,7 @@ class StableDiffusionInpaintPipeline(
             else:
                 feature_extractor_input = self.image_processor.numpy_to_pil(image)
             safety_checker_input = self.feature_extractor(feature_extractor_input, return_tensors="pt").to(device)
-            _image, has_nsfw_concept = self.safety_checker(
+            image, has_nsfw_concept = self.safety_checker(
                 images=image, clip_input=safety_checker_input.pixel_values.to(dtype)
             )
         return image, has_nsfw_concept
@@ -972,23 +972,13 @@ class StableDiffusionInpaintPipeline(
                         callback(i, t, latents)
 
         if not output_type == "latent":
-            condition_kwargs = {}
-            if isinstance(self.vae, AsymmetricAutoencoderKL):
-                init_image = init_image.to(device=device, dtype=masked_image_latents.dtype)
-                init_image_condition = init_image.clone()
-                init_image = self._encode_vae_image(init_image, generator=generator)
-                mask_condition = mask_condition.to(device=device, dtype=masked_image_latents.dtype)
-                condition_kwargs = {"image": init_image_condition, "mask": mask_condition}
-            image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False, **condition_kwargs)[0]
-            image, has_nsfw_concept = self.run_safety_checker(image, device, prompt_embeds.dtype)
+            image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False)[0]
+            _image, has_nsfw_concept = self.run_safety_checker(image, device, prompt_embeds.dtype)
         else:
             image = latents
             has_nsfw_concept = None
 
-        if has_nsfw_concept is None:
-            do_denormalize = [True] * image.shape[0]
-        else:
-            do_denormalize = [not has_nsfw for has_nsfw in has_nsfw_concept]
+        do_denormalize = [True] * image.shape[0]
 
         image = self.image_processor.postprocess(image, output_type=output_type, do_denormalize=do_denormalize)
 
