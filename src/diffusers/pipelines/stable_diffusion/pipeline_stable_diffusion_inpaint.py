@@ -756,7 +756,7 @@ class StableDiffusionInpaintPipeline(
                 every step.
             cross_attention_kwargs (`dict`, *optional*):
                 A kwargs dictionary that if specified is passed along to the [`AttentionProcessor`] as defined in
-                [`self.processor`](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/cross_attention.py).
+                [`self.processor`](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/attention_processor.py).
 
         Examples:
 
@@ -972,7 +972,14 @@ class StableDiffusionInpaintPipeline(
                         callback(i, t, latents)
 
         if not output_type == "latent":
-            image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False)[0]
+            condition_kwargs = {}
+            if isinstance(self.vae, AsymmetricAutoencoderKL):
+                init_image = init_image.to(device=device, dtype=masked_image_latents.dtype)
+                init_image_condition = init_image.clone()
+                init_image = self._encode_vae_image(init_image, generator=generator)
+                mask_condition = mask_condition.to(device=device, dtype=masked_image_latents.dtype)
+                condition_kwargs = {"image": init_image_condition, "mask": mask_condition}
+            image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False, **condition_kwargs)[0]
             _image, has_nsfw_concept = self.run_safety_checker(image, device, prompt_embeds.dtype)
         else:
             image = latents

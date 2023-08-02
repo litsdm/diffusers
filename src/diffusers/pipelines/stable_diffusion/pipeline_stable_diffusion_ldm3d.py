@@ -41,11 +41,10 @@ logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 EXAMPLE_DOC_STRING = """
     Examples:
-        ```py
-        >>> import torch
-        >>> from diffusers import StableDiffusionPipeline
+        ```python
+        >>> from diffusers import StableDiffusionLDM3DPipeline
 
-        >>> pipe = StableDiffusionLDM3DPipeline.from_pretrained("Intel/ldm3d")
+        >>> pipe = StableDiffusionLDM3DPipeline.from_pretrained("Intel/ldm3d-4c")
         >>> pipe = pipe.to("cuda")
 
         >>> prompt = "a photo of an astronaut riding a horse on mars"
@@ -63,7 +62,10 @@ class LDM3DPipelineOutput(BaseOutput):
     Output class for Stable Diffusion pipelines.
 
     Args:
-        images (`List[PIL.Image.Image]` or `np.ndarray`)
+        rgb (`List[PIL.Image.Image]` or `np.ndarray`)
+            List of denoised PIL images of length `batch_size` or NumPy array of shape `(batch_size, height, width,
+            num_channels)`.
+        depth (`List[PIL.Image.Image]` or `np.ndarray`)
             List of denoised PIL images of length `batch_size` or NumPy array of shape `(batch_size, height, width,
             num_channels)`.
         nsfw_content_detected (`List[bool]`)
@@ -541,7 +543,7 @@ class StableDiffusionLDM3DPipeline(
                 every step.
             cross_attention_kwargs (`dict`, *optional*):
                 A kwargs dictionary that if specified is passed along to the [`AttentionProcessor`] as defined in
-                [`self.processor`](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/cross_attention.py).
+                [`self.processor`](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/attention_processor.py).
 
         Examples:
 
